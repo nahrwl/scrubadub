@@ -1,6 +1,6 @@
 import re
 
-import textblob
+import spacy
 
 from .base import RegexDetector
 from ..filth import NameFilth
@@ -12,6 +12,9 @@ class NameDetector(RegexDetector):
     ``text``. Disallow particular nouns by adding them to the
     ``NameDetector.disallowed_nouns`` set.
     """
+
+    nlp = spacy.load('en')
+
     filth_cls = NameFilth
 
     disallowed_nouns = CanonicalStringSet(["skype"])
@@ -23,13 +26,20 @@ class NameDetector(RegexDetector):
                 'NameDetector.disallowed_nouns must be CanonicalStringSet'
             )
 
-        # find the set of proper nouns using textblob.
+        if type(text) is not unicode:
+            text = text.decode('utf-8')
+
+        parsed_text = self.nlp(text)
+        entities = list(parsed_text.ents)
         proper_nouns = set()
-        blob = textblob.TextBlob(text)
-        for word, part_of_speech in blob.tags:
-            is_proper_noun = part_of_speech in ("NNP", "NNPS")
-            if is_proper_noun and word.lower() not in self.disallowed_nouns:
-                proper_nouns.add(word)
+        accepted_entities = ["PERSON"]
+        for entity in entities:
+            is_proper_noun = entity.label_ in accepted_entities
+            for t in entity:
+                word = t.orth_
+                not_disallowed = word.lower() not in self.disallowed_nouns
+                if is_proper_noun and not_disallowed:
+                    proper_nouns.add(word)
 
         # use a regex to replace the proper nouns by first escaping any
         # lingering punctuation in the regex

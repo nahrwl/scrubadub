@@ -41,6 +41,7 @@ Quick start
 
        mkvirtualenv scrubadub
        pip install -r requirements/python-dev
+       python -m spacy download en
 
 3. Contribute! There are several `open issues
    <https://github.com/datascopeanalytics/scrubadub/issues>`_ that provide
